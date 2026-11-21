@@ -23,6 +23,13 @@ const DEPTS = [['Operations', '#f97316'], ['Sales', '#3b82f6'], ['Warehouse', '#
 const LOCS = [['Head Office', 'Business Bay, Dubai', 25.1857, 55.2665, 150], ['Central Warehouse', 'Al Quoz Industrial 3, Dubai', 25.1316, 55.2297, 250], ['Flagship Store', 'Downtown Dubai', 25.1972, 55.2744, 120]];
 const SHIFTS = [['General', '09:00', '18:00', 60, 10, '1,2,3,4,5,6', '#3b82f6'], ['Morning', '07:00', '15:00', 45, 10, '1,2,3,4,5,6', '#22c55e'], ['Evening', '14:00', '22:00', 45, 10, '0,1,2,3,4,5,6', '#f59e0b'], ['Night', '22:00', '06:00', 45, 15, '0,1,2,3,4,5', '#6366f1']];
 
+// Optional industry profile: DEMO_PROFILE=construction relabels departments, sites and titles.
+const CON_DEPT = { Operations: 'Site Execution', Sales: 'Design Studio', Warehouse: 'Joinery Workshop', Finance: 'Finance', HR: 'HR & Admin', 'Field Service': 'MEP', 'Customer Support': 'Project Management' };
+const CON_TITLE = { 'Site Execution': ['Site Engineer', 'Foreman', 'Mason', 'Tiler', 'Painter', 'Helper'], 'Design Studio': ['Interior Designer', 'Draftsman', 'Estimator'],
+  'Joinery Workshop': ['Carpenter', 'Joiner', 'Polisher', 'CNC Operator'], 'MEP': ['Electrician', 'Plumber', 'HVAC Technician', 'Duct Fabricator'], 'Project Management': ['Project Manager', 'Project Coordinator', 'QS Engineer'] };
+const CON_LOCS = [['Head Office', 'Business Bay, Dubai', 25.1857, 55.2665, 150], ['Joinery Workshop', 'Al Quoz Industrial 3, Dubai', 25.1316, 55.2297, 250], ['Site · Villa Fit-out', 'Jumeirah, Dubai', 25.2048, 55.2416, 200]];
+const CON = process.env.DEMO_PROFILE === 'construction';
+
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
 
 export function seedDemo(db, { companyName } = {}) {
@@ -31,8 +38,8 @@ export function seedDemo(db, { companyName } = {}) {
   const s = getSettings(db), tz = s.timezone, cutoff = parseHHMM(s.day_cutoff);
   const today = workDate(now, tz, cutoff);
   const id = (r) => Number(r.lastInsertRowid);
-  const dept = Object.fromEntries(DEPTS.map(([n, c]) => [n, id(db.prepare('INSERT INTO departments (name, color) VALUES (?, ?)').run(n, c))]));
-  const locs = LOCS.map((l) => id(db.prepare('INSERT INTO locations (name, address, lat, lng, radius_m) VALUES (?, ?, ?, ?, ?)').run(...l)));
+  const dept = Object.fromEntries(DEPTS.map(([n, c]) => [n, id(db.prepare('INSERT INTO departments (name, color) VALUES (?, ?)').run(CON ? CON_DEPT[n] : n, c))]));
+  const locs = (CON ? CON_LOCS : LOCS).map((l) => id(db.prepare('INSERT INTO locations (name, address, lat, lng, radius_m) VALUES (?, ?, ?, ?, ?)').run(...l)));
   const shifts = SHIFTS.map((x) => id(db.prepare('INSERT INTO shifts (name, start, end, break_min, grace_min, days, color) VALUES (?, ?, ?, ?, ?, ?, ?)').run(...x)));
   const lt = [['Annual leave', '#8b5cf6', 1, 30], ['Sick leave', '#ef4444', 1, 15], ['Emergency leave', '#f59e0b', 1, 5], ['Unpaid leave', '#64748b', 0, 0]]
     .map((x) => id(db.prepare('INSERT INTO leave_types (name, color, paid, quota_days) VALUES (?, ?, ?, ?)').run(...x)));
@@ -44,8 +51,9 @@ export function seedDemo(db, { companyName } = {}) {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const adminId = id(insE.run('E100', 'Demo Admin', 'admin@demo.local', 'HR Director', 'admin', dept.HR, locs[0], null, null, pw, pin, addDays(today, -400), now));
   const emps = PEOPLE.map(([name, d, title, role], i) => {
-    const loc = d === 'Warehouse' ? locs[1] : d === 'Sales' ? locs[2] : locs[0];
-    const shift = /Night/.test(title) ? shifts[3] : d === 'Warehouse' ? shifts[1] : d === 'Sales' ? shifts[2] : d === 'Field Service' ? shifts[1] : shifts[0];
+    if (CON && !role && CON_TITLE[CON_DEPT[d]]) { const t = CON_TITLE[CON_DEPT[d]]; title = t[i % t.length]; }
+    const loc = d === 'Warehouse' ? locs[1] : d === (CON ? 'Operations' : 'Sales') ? locs[2] : locs[0];
+    const shift = /Night/.test(title) ? shifts[3] : d === 'Warehouse' ? shifts[1] : d === 'Sales' ? shifts[CON ? 0 : 2] : d === 'Field Service' ? shifts[1] : shifts[0];
     const email = i === 0 ? 'manager@demo.local' : name.toLowerCase().replace(/[^a-z]+/g, '.') + '@example.com';
     const empId = id(insE.run('E' + (201 + i), name, email, title, role || 'employee', dept[d], loc, shift, role ? adminId : null, pw, pin, addDays(today, -300 + i), now));
     return { id: empId, loc, shift, idx: i, dept: d };
