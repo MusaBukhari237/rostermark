@@ -1,0 +1,19 @@
+{
+  "name": "rostermark-desktop",
+  "productName": "Rostermark",
+  "version": "1.0.0",
+  "description": "Desktop app and full-screen kiosk for a Rostermark attendance server.",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "Musa Bukhari",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win portable --x64" },
+  "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" },
+  "build": {
+    "appId": "io.github.musabukhari237.rostermark",
+    "productName": "Rostermark",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "preload.js", "setup.html", "icon.png", "config.json", "package.json"],
+    "win": { "icon": "icon.png" },
+    "portable": { "artifactName": "${productName}-Desktop-${version}-portable.exe" }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "rostermark",
+  "version": "1.0.0",
+  "description": "Self-hosted attendance, shift rostering and leave management for multi-site teams: geofenced phone clock-in, paired kiosks, desktop app, approvals, payroll-ready reports, REST API and webhooks.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Musa Bukhari",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "keywords": ["attendance", "time-and-attendance", "shift-scheduling", "roster", "leave-management", "geofencing", "kiosk", "self-hosted", "hr", "workforce-management", "rest-api"]
+}

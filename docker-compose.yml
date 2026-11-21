@@ -1,0 +1,15 @@
+services:
+  rostermark:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # First admin, created on the first start only. Change the password after signing in.
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: change-me-now
+      # DEMO: "1"   # seed sample data and show demo logins on the sign-in page
+    volumes:
+      - rostermark-data:/data
+volumes:
+  rostermark-data:
