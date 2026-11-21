@@ -97,6 +97,7 @@ curl -X POST -H "Authorization: Bearer rk_..." -H "Content-Type: application/jso
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | – | Creates the first admin on an empty database |
 | `SESSION_SECRET` | random, saved in `DATA_DIR` | Signs session cookies |
 | `DEMO`, `DEMO_RESET_HOURS` | off, `0` | Sample data, and how often to reset it |
+| `DEMO_PROFILE` | – | `construction` relabels the sample data for contracting, fit-out and workshop teams |
 | `BRAND_DIR`, `APP_NAME` | `./brand`, `Rostermark` | White-label settings (`brand.json` + logo) |
 
 Run Rostermark behind HTTPS. Browsers block location and camera access on plain HTTP.
