@@ -28,17 +28,17 @@ function Kiosk() {
   const inCount = (roster || []).filter((e) => e.state !== 'out').length;
   return html`<div class="kiosk">
     <aside class="k-side">
-      <div class="logo"><img src=${META.logo} alt="" /><div><b style=${{ fontSize: 17 }}>${META.companyName}</b><div style=${{ color: 'rgba(241,245,249,.55)', fontSize: 13 }}>${info ? `${info.name}${info.location ? ' · ' + info.location : ''}` : 'Attendance kiosk'}</div></div></div>
+      <div class="logo"><img src=${META.logo} alt="" /><div><b style=${{ fontSize: 15, fontWeight: 600, color: '#fff' }}>${META.companyName}</b><div style=${{ color: '#8b90b0', fontSize: 12.5 }}>${info ? `${info.name}${info.location ? ' · ' + info.location : ''}` : 'Attendance kiosk'}</div></div></div>
       <div><div class="k-time">${clockParts(now).main}<small>${clockParts(now).period}</small></div>
         <div class="k-date">${new Date(now).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', timeZone: META.timezone })}</div></div>
-      <p style=${{ color: 'rgba(241,245,249,.7)', fontSize: 16 }}>Tap your name, enter your PIN, and you're done.</p>
+      <p style=${{ color: '#9ea3c2', fontSize: 14.5 }}>Tap your name, enter your PIN, and you're done.</p>
       <div class="k-stats"><div><b>${inCount}</b><span>On site now</span></div><div><b>${(roster || []).length}</b><span>Team members</span></div></div>
       <div class="k-foot"><button class="btn sm" onClick=${fs}>${Icon('maximize')} Full screen</button><a class="btn sm" href="/">${Icon('settings')} Manager</a><button class="btn sm" onClick=${() => { if (confirm('Unpair this kiosk?')) { localStorage.removeItem('rm_device'); location.reload(); } }}>${Icon('x')} Unpair</button></div>
     </aside>
     <main class="k-main">
       <div class="k-search"><div class="search" style=${{ flex: 1 }}>${Icon('search')}<input class="input" placeholder="Find your name or employee ID" value=${q} onInput=${(e) => setQ(e.target.value)} /></div></div>
       <div class="k-grid">${list.map((e) => html`<button class="k-card" key=${e.id} onClick=${() => setWho(e)}>
-        <i class=${'st ' + e.state}></i><${Avatar} name=${e.name} photo=${e.photo} /><b>${e.name}</b><small>${e.state === 'in' ? 'In since ' + fmtTime(e.since, META.timezone) : e.state === 'break' ? 'On break' : e.department || e.code}</small></button>`)}
+        <i class=${'st ' + e.state}></i><${Avatar} name=${e.name} photo=${e.photo} /><div style=${{ minWidth: 0 }}><b>${e.name}</b><small>${e.state === 'in' ? 'In since ' + fmtTime(e.since, META.timezone) : e.state === 'break' ? 'On break' : e.department || e.code}</small></div></button>`)}
         ${roster && !list.length && html`<div style=${{ gridColumn: '1/-1', textAlign: 'center', color: 'rgba(241,245,249,.5)', padding: 40 }}>No one matches “${q}”.</div>`}</div>
     </main>
     ${who && html`<${PunchFlow} emp=${who} onClose=${() => { setWho(null); setQ(''); load(); }} />`}

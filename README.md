@@ -4,7 +4,11 @@
 
 [Try the live demo](https://rostermark.92.4.64.89.sslip.io) · [Download the desktop app](https://github.com/MusaBukhari237/rostermark/releases/latest) · [Report an issue](https://github.com/MusaBukhari237/rostermark/issues)
 
-[![Rostermark dashboard and phone clock-in](docs/banner.png)](https://rostermark.92.4.64.89.sslip.io)
+### ▶ Watch the walkthrough (3:32)
+
+[![Rostermark walkthrough: geofenced phone clock-in, live multi-site dashboard, roster, approvals, reports and admin settings](docs/walkthrough.gif)](https://github.com/MusaBukhari237/rostermark/releases/download/demo-video/rostermark-walkthrough.mp4)
+
+*Click the preview to play the full narrated walkthrough (MP4, 1080p). It's also attached to the [demo-video release](https://github.com/MusaBukhari237/rostermark/releases/tag/demo-video).*
 
 > The sign-in page has one-click demo logins for **Admin**, **Manager** and **Employee**. The data is synthetic and resets every few hours.
 
@@ -39,9 +43,18 @@ Growing businesses with several sites, shifts or departments: retail chains, war
 - **Roles**: admin, manager and employee. Logins use email + password or employee ID + PIN.
 - **White-label**: logo, accent colour, company name and product name.
 
-| Roster | Reports | Leave |
-|---|---|---|
-| ![Roster](docs/schedule.png) | ![Reports](docs/reports.png) | ![Leave](docs/leave.png) |
+## Screenshots
+
+Built for data-dense, multi-site work: Geist and Geist Mono type, a dark grouped sidebar, compact tables, and a dark glass kiosk.
+
+| | |
+|---|---|
+| ![Sign-in (light)](docs/screenshots/login-light.webp)<br>**Sign-in (light)** | ![Sign-in (dark)](docs/screenshots/login-dark.webp)<br>**Sign-in (dark)** |
+| ![Multi-site dashboard](docs/screenshots/dashboard-light.webp)<br>**Multi-site dashboard** | ![Dashboard in dark mode](docs/screenshots/dashboard-dark.webp)<br>**Dashboard in dark mode** |
+| ![Weekly roster](docs/screenshots/schedule.webp)<br>**Weekly roster** | ![Timesheets filtered to punches outside a geofence](docs/screenshots/timesheets-geofence.webp)<br>**Timesheets filtered to punches outside a geofence** |
+| ![Leave approvals](docs/screenshots/leave.webp)<br>**Leave approvals** | ![Reports and heatmap](docs/screenshots/reports.webp)<br>**Reports and heatmap** |
+| ![Sites and geofences](docs/screenshots/settings-sites.webp)<br>**Sites and geofences** | ![Paired kiosk](docs/screenshots/kiosk.webp)<br>**Paired kiosk** |
+| ![Employee phone](docs/screenshots/phone.webp)<br>**Employee phone, geofenced clock-in** | |
 
 ## Quick start
 

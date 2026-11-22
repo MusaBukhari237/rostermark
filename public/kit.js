@@ -88,10 +88,15 @@ export function Person({ name, sub, photo }) {
 }
 
 /* ---------- Branding ---------- */
+export function inkFor(hex = '') {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim()); if (!m) return '';
+  const n = parseInt(m[1], 16); const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.42 ? '#111111' : '#ffffff';
+}
 export function applyBrand({ accent, accentInk, theme } = {}) {
   const r = document.documentElement;
-  if (accent) r.style.setProperty('--accent', accent);
-  if (accentInk) r.style.setProperty('--accent-ink', accentInk);
+  if (accent) { r.style.setProperty('--accent', accent); r.style.setProperty('--accent-ink', accentInk || inkFor(accent) || '#ffffff'); }
+  else if (accentInk) r.style.setProperty('--accent-ink', accentInk);
   const saved = safeGet('theme');
   r.dataset.theme = saved || theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 }
@@ -167,36 +172,36 @@ export function Field({ label, help, children }) {
 }
 export function Loading() { return html`<div class="empty"><div class="pulse"></div><span class="small">Loading…</span></div>`; }
 
-/** Bar chart in inline SVG. data: [{label, value, color?}] */
+/** Bar chart (HTML, crisp at any size). data: [{label, value, color?}] or, with `stacked`, [{label, values: [{name, v, color}]}] */
+const niceStep = (x) => { if (x <= 0) return 1; const p = 10 ** Math.floor(Math.log10(x)); const f = x / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; };
+const tick = (v) => Number.isInteger(v) ? v : v.toFixed(1);
 export function BarChart({ data, height = 180, format = (v) => v, stacked }) {
-  const max = Math.max(1, ...data.map((d) => stacked ? d.values.reduce((a, b) => a + b.v, 0) : d.value));
-  const w = 100 / Math.max(data.length, 1);
-  return html`<div style=${{ position: 'relative' }}>
-    <svg viewBox=${`0 0 100 ${height / 3}`} preserveAspectRatio="none" style=${{ width: '100%', height: height + 'px', display: 'block' }}>
-      ${data.map((d, i) => {
-        if (stacked) {
-          let y = height / 3;
-          return d.values.map((s) => { const h = (s.v / max) * (height / 3 - 2); y -= h; return html`<rect x=${i * w + w * 0.18} y=${y} width=${w * 0.64} height=${Math.max(h, 0)} fill=${s.color} rx="0.6"><title>${d.label}: ${s.name} ${format(s.v)}</title></rect>`; });
-        }
-        const h = (d.value / max) * (height / 3 - 2);
-        return html`<rect x=${i * w + w * 0.18} y=${height / 3 - h} width=${w * 0.64} height=${Math.max(h, 0.3)} fill=${d.color || 'var(--accent)'} rx="0.8"><title>${d.label}: ${format(d.value)}</title></rect>`;
+  const total = (d) => stacked ? d.values.reduce((a, b) => a + (b.v || 0), 0) : d.value || 0;
+  const top = Math.max(1, ...data.map(total)); const step = niceStep(top / 4); const n = Math.max(2, Math.ceil(top / step)); const max = step * n;
+  return html`<div class="chart">
+    <div class="chart-plot" style=${{ height: height + 'px' }}>
+      <div class="chart-grid">${Array.from({ length: n + 1 }, (_, i) => n - i).map((k) => html`<i><span>${tick(step * k)}</span></i>`)}</div>
+      ${data.map((d) => {
+        const segs = (stacked ? d.values : [{ name: '', v: d.value, color: d.color || 'var(--accent)' }]).filter((x) => x.v > 0);
+        return html`<div class="chart-col"><div>${segs.map((x) => html`<i style=${{ height: `max(${(x.v / max) * 100}%, 2px)`, background: x.color }}></i>`)}</div>
+          <span class="tip"><b>${d.label}</b>${(stacked ? d.values : [{ name: '', v: d.value }]).map((x) => html`<br />${x.name ? x.name + ': ' : ''}${format(x.v)}`)}</span></div>`;
       })}
-    </svg>
-    <div style=${{ display: 'grid', gridTemplateColumns: `repeat(${data.length}, 1fr)`, fontSize: '10.5px', color: 'var(--ink-3)', textAlign: 'center', marginTop: '6px' }}>
-      ${data.map((d) => html`<span style=${{ overflow: 'hidden', whiteSpace: 'nowrap' }}>${d.label}</span>`)}
-    </div></div>`;
+    </div>
+    <div class="chart-labels">${data.map((d) => html`<span>${d.label}</span>`)}</div></div>`;
 }
 
 /** Donut chart. data: [{label, value, color}] */
 export function Donut({ data, size = 150, center }) {
   const total = data.reduce((a, b) => a + b.value, 0) || 1;
+  const parts = data.filter((d) => d.value > 0).length;
+  const gap = parts > 1 ? 0.9 : 0;
   let acc = 0; const r = 15.9155;
-  return html`<div class="row gap-lg" style=${{ alignItems: 'center' }}>
-    <svg viewBox="0 0 42 42" width=${size} height=${size} style=${{ flex: 'none' }}>
-      <circle cx="21" cy="21" r=${r} fill="none" stroke="var(--bg-sunk)" stroke-width="5" />
-      ${data.map((d) => { const len = (d.value / total) * 100; const el = html`<circle cx="21" cy="21" r=${r} fill="none" stroke=${d.color} stroke-width="5" stroke-dasharray=${`${len} ${100 - len}`} stroke-dashoffset=${25 - acc}><title>${d.label}: ${d.value}</title></circle>`; acc += len; return el; })}
-      ${center && html`<text x="21" y="22.5" text-anchor="middle" font-size="6" font-weight="700" fill="var(--ink)">${center}</text>`}
+  return html`<div class="row gap-lg donut-wrap" style=${{ alignItems: 'center' }}>
+    <svg class="donut" viewBox="0 0 42 42" width=${size} height=${size} style=${{ flex: 'none' }}>
+      <circle cx="21" cy="21" r=${r} fill="none" stroke="var(--bg-sunk)" style=${{ strokeWidth: 'var(--donut-w, 5)' }} />
+      ${data.map((d) => { const len = (d.value / total) * 100; const el = d.value > 0 && html`<circle cx="21" cy="21" r=${r} fill="none" stroke=${d.color} style=${{ strokeWidth: 'var(--donut-w, 5)' }} stroke-dasharray=${`${Math.max(len - gap, 0.01)} ${100 - len + gap}`} stroke-dashoffset=${25 - acc}><title>${d.label}: ${d.value}</title></circle>`; acc += len; return el; })}
+      ${center && html`<text x="21" y="23" text-anchor="middle" font-size="6.4" font-weight="750" fill="var(--ink)" letter-spacing="-.2">${center}</text>`}
     </svg>
-    <div class="col gap-sm">${data.map((d) => html`<div class="row small"><i class="dot" style=${{ width: 10, height: 10, borderRadius: 3, background: d.color, display: 'inline-block' }}></i><span class="muted">${d.label}</span><b style=${{ marginLeft: 'auto', paddingLeft: '12px' }}>${d.value}</b></div>`)}</div>
+    <div class="col gap-sm donut-legend">${data.map((d) => html`<div class="row small"><i class="legend-dot" style=${{ background: d.color }}></i><span class="muted">${d.label}</span><b style=${{ marginLeft: 'auto', paddingLeft: '14px', fontVariantNumeric: 'tabular-nums' }}>${d.value}</b></div>`)}</div>
   </div>`;
 }

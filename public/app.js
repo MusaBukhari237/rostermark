@@ -52,7 +52,8 @@ function AuthLayout({ children }) {
       <div class="row"><img src=${META.logo} style=${{ width: 40, height: 40, borderRadius: 10, background: '#fff', padding: 4 }} alt="" /><b style=${{ fontSize: 18 }}>${META.appName}</b></div>
       <div><h2>${META.tagline}</h2><ul>
         <li>${Icon('map')} Geofenced clock-in from phones, kiosks and desktops</li><li>${Icon('calendar')} Shift rosters, night shifts and holidays</li>
-        <li>${Icon('plane')} Leave requests, balances and approvals</li><li>${Icon('chart')} Payroll-ready reports, REST API and webhooks</li></ul></div>
+        <li>${Icon('plane')} Leave requests, balances and approvals</li><li>${Icon('chart')} Payroll-ready reports, REST API and webhooks</li></ul>
+        <div class="auth-kpis"><div><b>Multi-site</b><span>Geofences</span></div><div><b>3 roles</b><span>Role-based access</span></div><div><b>API</b><span>REST + webhooks</span></div></div></div>
       <div class="small" style=${{ opacity: .7 }}>${META.companyName}</div></div>
     <div class="auth-form">${children}</div></div>`;
 }
@@ -95,9 +96,9 @@ function Shell({ user, onLogout }) {
   const staff = isStaff(user);
   const counts = useAsync(() => staff ? Promise.all([api('/leave?status=pending'), api('/corrections')]).then(([l, c]) => ({ leave: l.length, corr: c.filter((x) => x.status === 'pending').length })) : Promise.resolve({}), [route.path]);
   const nav = staff ? [
-    ['dashboard', 'Dashboard', 'home'], ['people', 'People', 'users'], ['schedule', 'Schedule', 'calendar'], ['timesheets', 'Timesheets', 'clock'],
-    ['leave', 'Leave', 'plane', counts.data?.leave], ['requests', 'Corrections', 'inbox', counts.data?.corr], ['reports', 'Reports', 'chart'],
-    ...(user.role === 'admin' ? [['settings', 'Settings', 'settings']] : []), ['me', 'My attendance', 'activity']
+    ['dashboard', 'Dashboard', 'home', 0, 'Overview'], ['people', 'People', 'users', 0, 'Workforce'], ['schedule', 'Schedule', 'calendar', 0, 'Workforce'],
+    ['timesheets', 'Timesheets', 'clock', 0, 'Time & attendance'], ['leave', 'Leave', 'plane', counts.data?.leave, 'Time & attendance'], ['requests', 'Corrections', 'inbox', counts.data?.corr, 'Time & attendance'],
+    ['reports', 'Reports', 'chart', 0, 'Insights'], ...(user.role === 'admin' ? [['settings', 'Settings', 'settings', 0, 'Administration']] : []), ['me', 'My attendance', 'activity', 0, 'Personal']
   ] : [['me', 'My attendance', 'activity']];
   const page = route.parts[0] || (staff ? 'dashboard' : 'me');
   const [open, setOpen] = useState(false);
@@ -106,18 +107,23 @@ function Shell({ user, onLogout }) {
   const pages = { dashboard: Dashboard, people: People, schedule: Schedule, timesheets: Timesheets, leave: Leave, requests: Corrections, reports: Reports, settings: Settings, me: Me };
   const Page = (staff || page === 'me') ? pages[page] || Dashboard : Me;
   if (!staff) return html`<div class="me" style=${{ maxWidth: 640 }}><${Me} user=${user} onLogout=${logout} /></div>`;
+  const groups = [...new Set(nav.map((n) => n[4]))];
+  const cur = nav.find((n) => n[0] === page) || nav[0];
   return html`<div class="shell">
     <aside class=${'sidebar' + (open ? ' open' : '')}>
-      <div class="brand"><img src=${META.logo} alt="" /><div><div class="name">${META.companyName}</div><div class="sub">${META.appName}</div></div></div>
-      <nav class="nav">${nav.map(([k, l, i, n]) => html`<a href=${'#/' + k} class=${page === k ? 'active' : ''}>${Icon(i)} ${l}${n ? html`<span class="count">${n}</span>` : ''}</a>`)}</nav>
+      <div class="brand"><img src=${META.logo} alt="" /><div style=${{ minWidth: 0 }}><div class="name">${META.companyName}</div><div class="sub">${META.appName} workspace</div></div></div>
+      ${groups.map((g) => html`<div class="nav-label">${g}</div><nav class="nav">${nav.filter((n) => n[4] === g).map(([k, l, i, n]) => html`<a href=${'#/' + k} class=${page === k ? 'active' : ''}>${Icon(i)} ${l}${n ? html`<span class="count">${n}</span>` : ''}</a>`)}</nav>`)}
       <div class="nav-label">Clock-in points</div><nav class="nav"><a href="/kiosk" target="_blank">${Icon('monitor')} Kiosk mode</a></nav>
-      <span class="spacer"></span><div class="divider"></div>
-      <div class="row" style=${{ padding: '8px 6px' }}><${Avatar} name=${user.name} photo=${user.photo} size="sm" /><div style=${{ minWidth: 0 }}><b class="small">${user.name}</b><div class="faint small">${user.role}</div></div></div>
-      <div class="row"><button class="btn ghost sm" onClick=${toggleTheme}>${Icon('moon')} Theme</button><button class="btn ghost sm" onClick=${logout}>${Icon('logout')} Sign out</button></div>
+      <span class="spacer"></span>
+      <div class="who"><${Avatar} name=${user.name} photo=${user.photo} size="sm" /><div style=${{ minWidth: 0 }}><b>${user.name}</b><span>${user.role}</span></div>
+        <button class="btn ghost sm icon" title="Sign out" onClick=${logout}>${Icon('logout')}</button></div>
+      <div class="side-actions"><button class="btn ghost sm" onClick=${toggleTheme}>${Icon('moon')} Toggle theme</button></div>
     </aside>
     ${open && html`<div class="scrim" onClick=${() => setOpen(false)}></div>`}
-    <main class="main"><div class="topbar"><button class="btn ghost icon menu-btn" onClick=${() => setOpen(true)}>${Icon('menu')}</button><h1>${(nav.find((n) => n[0] === page) || nav[0])[1]}</h1><span class="spacer"></span>
-      <span class="faint small nowrap">${new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', timeZone: META.timezone })}</span></div>
+    <main class="main"><div class="topbar"><button class="btn ghost icon menu-btn" onClick=${() => setOpen(true)}>${Icon('menu')}</button>
+      <div class="crumbs"><span>${cur[4]}</span>${Icon('chevronRight')}<h1>${cur[1]}</h1></div><span class="spacer"></span>
+      <span class="tb-chip">${Icon('calendar')} ${new Date().toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: META.timezone })}</span>
+      <span class="tb-chip">${Icon('clock')} ${META.timezone || 'UTC'}</span></div>
       <div class="content"><${Page} user=${user} route=${route} onLogout=${logout} /></div></main></div>`;
 }
 
@@ -372,7 +378,7 @@ function Reports() {
 
 /* =================== Settings =================== */
 const TZS = (() => { try { return Intl.supportedValuesOf('timeZone'); } catch { return ['UTC', 'Asia/Dubai']; } })();
-const ACCENTS = ['#4f46e5', '#2563eb', '#0d9488', '#16a34a', '#ea580c', '#db2777', '#111827', '#bda873'];
+const ACCENTS = ['#5b5bd6', '#2563eb', '#0d9488', '#16a34a', '#ea580c', '#db2777', '#111827', '#b45309'];
 function Settings() {
   const [tab, setTab] = useState('company');
   const tabs = [['company', 'Company'], ['locations', 'Sites & geofences'], ['departments', 'Departments'], ['shifts', 'Shifts'], ['leave', 'Leave types'], ['holidays', 'Holidays'], ['devices', 'Kiosk devices'], ['api', 'API & webhooks'], ['audit', 'Audit log']];
@@ -393,7 +399,7 @@ function CompanySettings() {
   const sw = (k, l, h) => html`<label class="check"><input type="checkbox" checked=${f[k] === '1'} onChange=${(e) => set({ ...f, [k]: e.target.checked ? '1' : '0' })} /><span><b>${l}</b><div class="faint small">${h}</div></span></label>`;
   return html`<div class="col gap-lg"><div class="card card-pad col gap-lg"><div class="grid grid-2">
       <${Field} label="Company name"><input class="input" value=${f.company_name} onInput=${(e) => set({ ...f, company_name: e.target.value })} /><//>
-      <${Field} label="Timezone"><select class="input" value=${f.timezone} onChange=${(e) => set({ ...f, timezone: e.target.value })}>${TZS.map((z) => html`<option>${z}</option>`)}</select><//>
+      <${Field} label="Timezone"><select class="input" value=${f.timezone} onChange=${(e) => set({ ...f, timezone: e.target.value })}>${TZS.map((z) => html`<option value=${z}>${z}</option>`)}</select><//>
       <${Field} label="Day cut-off" help="Punches before this time belong to the previous day (night shifts)"><input type="time" class="input" value=${f.day_cutoff} onInput=${(e) => set({ ...f, day_cutoff: e.target.value })} /><//>
       <${Field} label="Overtime starts after (min beyond shift)"><input type="number" class="input" value=${f.overtime_after_min} onInput=${(e) => set({ ...f, overtime_after_min: e.target.value })} /><//></div>
     ${sw('allow_web_clock', 'Allow clock-in from phones and browsers', 'Employees sign in and clock in from their own device.')}
